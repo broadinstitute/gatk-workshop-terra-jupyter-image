@@ -7,11 +7,14 @@ FROM us.gcr.io/broad-dsp-gcr-public/terra-jupyter-base:1.1.3
 
 ARG GATK_VERSION=4.4.0.0
 
-WORKDIR /home/jupyter
+USER root
 
 RUN apt-get update && apt-get install -yq --no-install-recommends \
     openjdk-17-jdk \
     samtools
+
+USER jupyter
+WORKDIR /home/jupyter
 
 RUN wget https://github.com/broadinstitute/gatk/releases/download/$GATK_VERSION/gatk-$GATK_VERSION.zip && \
     unzip gatk-$GATK_VERSION.zip && \
