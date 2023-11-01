@@ -1,7 +1,7 @@
 # NOTE: By default this image will launch jupyter on startup. To bypass this and obtain a shell with 
 # full permissions, run: 
 # 
-# docker run -it --entrypoint /bin/bash -e GRANT_SUDO=yes --user root us.gcr.io/broad-dsp-gcr-public/terra-jupyter-base:1.1.3
+# docker run -it --entrypoint /bin/bash -e GRANT_SUDO=yes --user root <image_tag>
 
 FROM us.gcr.io/broad-dsp-gcr-public/terra-jupyter-base:1.1.3
 
@@ -19,11 +19,11 @@ WORKDIR /home/jupyter
 RUN wget https://github.com/broadinstitute/gatk/releases/download/$GATK_VERSION/gatk-$GATK_VERSION.zip && \
     unzip gatk-$GATK_VERSION.zip && \
     conda env create -f /home/jupyter/gatk-$GATK_VERSION/gatkcondaenv.yml && \
-    source activate gatk && \
+    . activate gatk && \
     conda install -c anaconda ipykernel -y && \
     pip install --upgrade jupyter_client && \
     python -m ipykernel install --user --name=gatk && \
-    source deactivate gatk
+    . deactivate gatk
 
 ENV PATH $PATH:/home/jupyter/gatk-$GATK_VERSION
 
