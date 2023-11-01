@@ -20,10 +20,8 @@ RUN wget https://github.com/broadinstitute/gatk/releases/download/$GATK_VERSION/
     unzip gatk-$GATK_VERSION.zip && \
     conda env create -f /home/jupyter/gatk-$GATK_VERSION/gatkcondaenv.yml && \
     . activate gatk && \
-    conda install -c anaconda ipykernel -y && \
-    pip install --upgrade jupyter_client && \
-    python -m ipykernel install --user --name=gatk && \
-    . deactivate gatk
+    python -m ipykernel install --user --name gatk --display-name "GATK Python Env" && \
+    . deactivate
 
 ENV PATH $PATH:/home/jupyter/gatk-$GATK_VERSION
 
