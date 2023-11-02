@@ -7,11 +7,20 @@ FROM us.gcr.io/broad-dsp-gcr-public/terra-jupyter-base:1.1.3
 
 ARG GATK_VERSION=4.4.0.0
 
-USER root
+ENV USER jupyter
+
 ENV HOME /root
+USER root
 
 # We need bash instead of dash to support the "source" command inside of Jupyter ("." does not work there)
 RUN ln -sf /bin/bash /bin/sh
+
+# We want to grant the jupyter user limited sudo permissions
+# without password so they can install the necessary packages that they 
+# want to use on the docker container
+RUN mkdir -p /etc/sudoers.d \
+        && echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/apt-get install *, /opt/conda/bin/conda install *, /opt/poetry/bin/poetry install" > /etc/sudoers.d/$USER \
+        && chmod 0440 /etc/sudoers.d/$USER
 
 # Install Java 17 (required by GATK 4.4), as well as samtools
 RUN apt-get update && apt-get install -yq --no-install-recommends \
@@ -26,6 +35,7 @@ RUN mkdir /gatk && \
     cd /gatk && \
     wget https://github.com/broadinstitute/gatk/releases/download/$GATK_VERSION/gatk-$GATK_VERSION.zip && \
     unzip gatk-$GATK_VERSION.zip && \
+    printf "#!/bin/bash\nsource activate gatk\nsudo conda install -c anaconda ipykernel -y\nexit0\n" > /gatk/setup_gatk_env && \
     chmod -R 755 /gatk 
 
 # Install nb_conda_kernels so that it will pick up the GATK conda environment as a kernel automagically
@@ -36,14 +46,10 @@ RUN conda env create -f /gatk/gatk-$GATK_VERSION/gatkcondaenv.yml
 
 # Install ipykernel so that nb_conda_kernels will pick up the GATK conda environment as a kernel.
 RUN source activate gatk
-RUN conda install -c conda-forge nb_conda_kernels -y
 RUN conda install -c anaconda ipykernel -y
 RUN pip install --upgrade jupyter_client
-RUN python -m ipykernel install --name gatk --display-name gatk
+# RUN python -m ipykernel install --name gatk --display-name gatk
 RUN source deactivate
-
-# Nothing to see here...
-RUN chmod -R 777 /opt/conda
 
 # Restore PIP_USER to its original value, and switch back to the jupyter user
 ENV PIP_USER=true
@@ -53,6 +59,11 @@ ENV HOME /home/jupyter
 
 # Make sure gatk gets added to the PATH
 ENV PATH $PATH:/gatk/gatk-$GATK_VERSION
+
+# Experiment to see if this helps
+RUN source activate gatk
+RUN sudo conda install -c anaconda ipykernel -y
+RUN source deactivate
 
 # NOTE: We inherit ENTRYPOINT ["/opt/conda/bin/jupyter", "notebook"] from the base image,
 # so no need to repeat it here
