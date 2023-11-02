@@ -40,7 +40,10 @@ RUN mkdir /gatk && \
 
 # Install nb_conda_kernels so that it will pick up the GATK conda environment as a kernel automagically
 RUN conda install -c conda-forge nb_conda_kernels -y
-RUN echo '{ "CondaKernelSpecManager": { "kernelspec_path": "/opt/conda" } }' > /home/jupyter/.jupyter/jupyter_config.json
+RUN mkdir /home/jupyter/.jupyter && \
+    echo '{ "CondaKernelSpecManager": { "kernelspec_path": "/opt/conda" } }' > /home/jupyter/.jupyter/jupyter_config.json && \
+    chmod -R 755 /home/jupyter/.jupyter && \
+    chown -R $USER:users /home/jupyter/.jupyter
 
 # Create (but do not activate) the GATK conda environment:
 RUN conda env create -f /gatk/gatk-$GATK_VERSION/gatkcondaenv.yml 
