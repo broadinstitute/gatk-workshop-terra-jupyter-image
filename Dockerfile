@@ -36,10 +36,14 @@ RUN conda env create -f /gatk/gatk-$GATK_VERSION/gatkcondaenv.yml
 
 # Install ipykernel so that nb_conda_kernels will pick up the GATK conda environment as a kernel.
 RUN source activate gatk
+RUN conda install -c conda-forge nb_conda_kernels -y
 RUN conda install -c anaconda ipykernel -y
 RUN pip install --upgrade jupyter_client
 RUN python -m ipykernel install --name gatk --display-name gatk
 RUN source deactivate
+
+# Nothing to see here...
+RUN chmod -R 777 /opt/conda
 
 # Restore PIP_USER to its original value, and switch back to the jupyter user
 ENV PIP_USER=true
