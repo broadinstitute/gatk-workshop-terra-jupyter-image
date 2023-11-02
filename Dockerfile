@@ -9,32 +9,41 @@ ARG GATK_VERSION=4.4.0.0
 
 USER root
 
+# We need bash instead of dash to support the "source" command inside of Jupyter ("." does not work there)
+RUN ln -sf /bin/bash /bin/sh
+
 # Install Java 17 (required by GATK 4.4), as well as samtools
 RUN apt-get update && apt-get install -yq --no-install-recommends \
     openjdk-17-jdk \
     samtools
 
+# Make sure the GATK Python libs don't get installed into the user's home dir 
 ENV PIP_USER=false
 
-# Download GATK and install to /gatk, then create the GATK conda environment and 
-# install it as a Jupyter kernel
+# Download GATK and install to /gatk
 RUN mkdir /gatk && \
     cd /gatk && \
     wget https://github.com/broadinstitute/gatk/releases/download/$GATK_VERSION/gatk-$GATK_VERSION.zip && \
     unzip gatk-$GATK_VERSION.zip && \
     chmod -R 755 /gatk 
 
+# Create (but do not activate) the GATK conda environment:
 RUN conda env create -f /gatk/gatk-$GATK_VERSION/gatkcondaenv.yml 
-RUN . activate gatk
-RUN conda install -c anaconda ipykernel -y 
-RUN pip install --upgrade jupyter_client
-RUN python -m ipykernel install --name gatk --display-name "GATK Python Env"
-RUN . deactivate
 
+# Register the GATK conda environment as a Jupyter kernel:
+#
+# RUN source activate gatk
+# RUN conda install -c anaconda ipykernel -y 
+# RUN pip install --upgrade jupyter_client
+# RUN python -m ipykernel install --name gatk --display-name "GATK Python Env"
+# RUN source deactivate
+
+# Restore PIP_USER to its original value, and switch back to the jupyter user
 ENV PIP_USER=true
 USER jupyter
 WORKDIR /home/jupyter
 
+# Make sure gatk gets added to the PATH
 ENV PATH $PATH:/gatk/gatk-$GATK_VERSION
 
 # NOTE: We inherit ENTRYPOINT ["/opt/conda/bin/jupyter", "notebook"] from the base image,
