@@ -35,11 +35,12 @@ RUN mkdir /gatk && \
     cd /gatk && \
     wget https://github.com/broadinstitute/gatk/releases/download/$GATK_VERSION/gatk-$GATK_VERSION.zip && \
     unzip gatk-$GATK_VERSION.zip && \
-    printf "#!/bin/bash\nsource activate gatk\nsudo /opt/conda/bin/conda install -c anaconda ipykernel -y\nexit0\n" > /gatk/setup_gatk_env && \
+    printf "#!/bin/bash\necho \'%s\' > /home/jupyter/.jupyter/jupyter_config.json\nsource activate gatk\nsudo /opt/conda/bin/conda install -c anaconda ipykernel -y\nexit 0\n" '{ "CondaKernelSpecManager": { "kernelspec_path": "/opt/conda" } }' > /gatk/setup_gatk_env && \
     chmod -R 755 /gatk 
 
 # Install nb_conda_kernels so that it will pick up the GATK conda environment as a kernel automagically
 RUN conda install -c conda-forge nb_conda_kernels -y
+RUN echo '{ "CondaKernelSpecManager": { "kernelspec_path": "/opt/conda" } }' > /home/jupyter/.jupyter/jupyter_config.json
 
 # Create (but do not activate) the GATK conda environment:
 RUN conda env create -f /gatk/gatk-$GATK_VERSION/gatkcondaenv.yml 
@@ -51,6 +52,8 @@ RUN pip install --upgrade jupyter_client
 # RUN python -m ipykernel install --name gatk --display-name gatk
 RUN source deactivate
 
+RUN python -m nb_conda_kernels list --CondaKernelSpecManager.kernelspec_path=/opt/conda
+
 # Restore PIP_USER to its original value, and switch back to the jupyter user
 ENV PIP_USER=true
 USER jupyter
@@ -58,12 +61,12 @@ WORKDIR /home/jupyter
 ENV HOME /home/jupyter
 
 # Make sure gatk gets added to the PATH
-ENV PATH $PATH:/gatk/gatk-$GATK_VERSION
+ENV PATH $PATH:/gatk/gatk-$GATK_VERSION:/gatk
 
 # Experiment to see if this helps
-RUN source activate gatk
-RUN sudo /opt/conda/bin/conda install -c anaconda ipykernel -y
-RUN source deactivate
+# RUN source activate gatk
+# RUN sudo /opt/conda/bin/conda install -c anaconda ipykernel -y
+# RUN source deactivate
 
 # NOTE: We inherit ENTRYPOINT ["/opt/conda/bin/jupyter", "notebook"] from the base image,
 # so no need to repeat it here
