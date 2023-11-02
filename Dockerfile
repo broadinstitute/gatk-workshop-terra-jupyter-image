@@ -35,7 +35,7 @@ RUN mkdir /gatk && \
     cd /gatk && \
     wget https://github.com/broadinstitute/gatk/releases/download/$GATK_VERSION/gatk-$GATK_VERSION.zip && \
     unzip gatk-$GATK_VERSION.zip && \
-    printf "#!/bin/bash\necho \'%s\' > /home/jupyter/.jupyter/jupyter_config.json\nsource activate gatk\nsudo /opt/conda/bin/conda install -c anaconda ipykernel -y\nexit 0\n" '{ "CondaKernelSpecManager": { "kernelspec_path": "/opt/conda" } }' > /gatk/setup_gatk_env && \
+    printf "#!/bin/bash\nmkdir /home/jupyter/.jupyter 2> /dev/null\necho \'%s\' > /home/jupyter/.jupyter/jupyter_config.json\nsource activate gatk\nsudo /opt/conda/bin/conda install -c anaconda ipykernel -y\nexit 0\n" '{ "CondaKernelSpecManager": { "kernelspec_path": "/opt/conda" } }' > /gatk/setup_gatk_env && \
     chmod -R 755 /gatk 
 
 # Install nb_conda_kernels so that it will pick up the GATK conda environment as a kernel automagically
