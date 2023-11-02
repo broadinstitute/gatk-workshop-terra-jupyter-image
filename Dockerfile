@@ -27,8 +27,16 @@ RUN mkdir /gatk && \
     unzip gatk-$GATK_VERSION.zip && \
     chmod -R 755 /gatk 
 
+RUN conda install -c conda-forge nb_conda_kernels -y
+
 # Create (but do not activate) the GATK conda environment:
 RUN conda env create -f /gatk/gatk-$GATK_VERSION/gatkcondaenv.yml 
+
+# Install ipykernel so that nb_conda_kernels will pick up the GATK conda environment as a kernel
+RUN source activate gatk
+RUN conda install -c anaconda ipykernel -y
+RUN pip install --upgrade jupyter_client
+RUN source deactivate
 
 # Register the GATK conda environment as a Jupyter kernel:
 #
