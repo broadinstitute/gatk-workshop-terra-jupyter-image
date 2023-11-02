@@ -8,6 +8,7 @@ FROM us.gcr.io/broad-dsp-gcr-public/terra-jupyter-base:1.1.3
 ARG GATK_VERSION=4.4.0.0
 
 USER root
+ENV HOME /root
 
 # We need bash instead of dash to support the "source" command inside of Jupyter ("." does not work there)
 RUN ln -sf /bin/bash /bin/sh
@@ -27,32 +28,24 @@ RUN mkdir /gatk && \
     unzip gatk-$GATK_VERSION.zip && \
     chmod -R 755 /gatk 
 
+# Install nb_conda_kernels so that it will pick up the GATK conda environment as a kernel automagically
 RUN conda install -c conda-forge nb_conda_kernels -y
 
 # Create (but do not activate) the GATK conda environment:
 RUN conda env create -f /gatk/gatk-$GATK_VERSION/gatkcondaenv.yml 
 
-# Install ipykernel so that nb_conda_kernels will pick up the GATK conda environment as a kernel
+# Install ipykernel so that nb_conda_kernels will pick up the GATK conda environment as a kernel.
 RUN source activate gatk
 RUN conda install -c anaconda ipykernel -y
 RUN pip install --upgrade jupyter_client
 RUN python -m ipykernel install --name gatk --display-name gatk
 RUN source deactivate
 
-# Register the GATK conda environment as a Jupyter kernel:
-#
-# RUN source activate gatk
-# RUN conda install -c anaconda ipykernel -y 
-# RUN pip install --upgrade jupyter_client
-# RUN python -m ipykernel install --name gatk --display-name "GATK Python Env"
-# RUN source deactivate
-
-RUN cp -a /home/jupyter /jupyter_bak
-
 # Restore PIP_USER to its original value, and switch back to the jupyter user
 ENV PIP_USER=true
 USER jupyter
 WORKDIR /home/jupyter
+ENV HOME /home/jupyter
 
 # Make sure gatk gets added to the PATH
 ENV PATH $PATH:/gatk/gatk-$GATK_VERSION
