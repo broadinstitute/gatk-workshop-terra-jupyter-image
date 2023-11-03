@@ -19,7 +19,7 @@ RUN ln -sf /bin/bash /bin/sh
 # without password so they can install the necessary packages that they 
 # want to use on the docker container
 RUN mkdir -p /etc/sudoers.d \
-        && echo "$USER ALL=(ALL) NOPASSWD: *" > /etc/sudoers.d/$USER \
+        && echo "$USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$USER \
         && chmod 0440 /etc/sudoers.d/$USER
 
 # Install Java 17 (required by GATK 4.4), as well as samtools
@@ -35,11 +35,21 @@ RUN mkdir /gatk && \
     cd /gatk && \
     wget https://github.com/broadinstitute/gatk/releases/download/$GATK_VERSION/gatk-$GATK_VERSION.zip && \
     unzip gatk-$GATK_VERSION.zip && \
-    printf "#!/bin/bash\nexport PATH=$PATH:/gatk/gatk-$GATK_VERSION:/gatk\nmkdir /home/jupyter/.jupyter 2> /dev/null\necho \'%s\' > /home/jupyter/.jupyter/jupyter_config.json\nsource activate gatk\nsudo /opt/conda/bin/conda install --force-reinstall -c anaconda ipykernel -y\nexit 0\n" '{ "CondaKernelSpecManager": { "kernelspec_path": "/opt/conda" } }' > /gatk/setup_gatk_env && \
-    chmod -R 755 /gatk 
+    printf "#!/bin/bash\n \
+    export PATH=$PATH:/gatk/gatk-$GATK_VERSION:/gatk\n \
+    mkdir /home/jupyter/.jupyter 2> /dev/null\n \
+    echo \'%s\' > /home/jupyter/.jupyter/jupyter_config.json\n \
+    sudo chmod -R 777 /opt/conda/pkgs/cache\n \
+    source activate gatk\n \
+    conda install -c anaconda ipykernel -y\n \
+    exit 0\n" '{ "CondaKernelSpecManager": { "kernelspec_path": "--user" } }' > /gatk/setup_gatk_env && \
+    rm /gatk/gatk-$GATK_VERSION.zip && \
+    chmod -R 755 /gatk && \
+    chown -R $USER:users /gatk
 
 # Install nb_conda_kernels so that it will pick up the GATK conda environment as a kernel automagically
 RUN conda install -c conda-forge nb_conda_kernels -y
+
 # RUN mkdir /home/jupyter/.jupyter && \
 #     echo '{ "CondaKernelSpecManager": { "kernelspec_path": "/opt/conda" } }' > /home/jupyter/.jupyter/jupyter_config.json && \
 #     chmod -R 755 /home/jupyter/.jupyter && \
