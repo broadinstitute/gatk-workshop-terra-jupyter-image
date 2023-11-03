@@ -19,7 +19,7 @@ RUN ln -sf /bin/bash /bin/sh
 # without password so they can install the necessary packages that they 
 # want to use on the docker container
 RUN mkdir -p /etc/sudoers.d \
-        && echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/apt-get install *, /opt/conda/bin/conda install *, /opt/poetry/bin/poetry install" > /etc/sudoers.d/$USER \
+        && echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/apt-get install *, /opt/conda/bin/conda *, /opt/poetry/bin/poetry install" > /etc/sudoers.d/$USER \
         && chmod 0440 /etc/sudoers.d/$USER
 
 # Install Java 17 (required by GATK 4.4), as well as samtools
@@ -40,22 +40,23 @@ RUN mkdir /gatk && \
 
 # Install nb_conda_kernels so that it will pick up the GATK conda environment as a kernel automagically
 RUN conda install -c conda-forge nb_conda_kernels -y
-RUN mkdir /home/jupyter/.jupyter && \
-    echo '{ "CondaKernelSpecManager": { "kernelspec_path": "/opt/conda" } }' > /home/jupyter/.jupyter/jupyter_config.json && \
-    chmod -R 755 /home/jupyter/.jupyter && \
-    chown -R $USER:users /home/jupyter/.jupyter
+RUN conda install -c anaconda ipykernel -y
+# RUN mkdir /home/jupyter/.jupyter && \
+#     echo '{ "CondaKernelSpecManager": { "kernelspec_path": "/opt/conda" } }' > /home/jupyter/.jupyter/jupyter_config.json && \
+#     chmod -R 755 /home/jupyter/.jupyter && \
+#     chown -R $USER:users /home/jupyter/.jupyter
 
 # Create (but do not activate) the GATK conda environment:
 RUN conda env create -f /gatk/gatk-$GATK_VERSION/gatkcondaenv.yml 
 
 # Install ipykernel so that nb_conda_kernels will pick up the GATK conda environment as a kernel.
-RUN source activate gatk
-RUN conda install -c anaconda ipykernel -y
-RUN pip install --upgrade jupyter_client
+# RUN source activate gatk
+# RUN conda install -c anaconda ipykernel -y
+# RUN pip install --upgrade jupyter_client
 # RUN python -m ipykernel install --name gatk --display-name gatk
-RUN source deactivate
+# RUN source deactivate
 
-RUN python -m nb_conda_kernels list --CondaKernelSpecManager.kernelspec_path=/opt/conda
+# RUN python -m nb_conda_kernels list --CondaKernelSpecManager.kernelspec_path=/opt/conda
 
 # Restore PIP_USER to its original value, and switch back to the jupyter user
 ENV PIP_USER=true
